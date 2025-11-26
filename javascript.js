@@ -1,13 +1,13 @@
 const gameBoard = (function (){
-  board = Array(9).fill(null);
+  board = Array(9).fill("");
   const getBoard = () => board;
-  const resetBoard = () => Array(9).fill(null);
+  const resetBoard = () => Array(9).fill("");
   const recordTurn = (square, symbol) => board[square] = symbol;
   return { getBoard, resetBoard, recordTurn };
 })();
 
 
-const players = (function () {
+const players = (function (){
   function addPlayer () {
     let name = "";
     let symbol = "";
@@ -66,11 +66,10 @@ const gameController = (function () {
       turn = turn == players.player1.getSymbol() ? players.player2.getSymbol() : players.player1.getSymbol();
     }
     const getTurn = () => turn;
-    const resetTurn = (newTurn) => turn = players.player1.getSymbol();
+    const resetTurn = () => turn = players.player1.getSymbol();
 
     return { toggleTurn, getTurn, resetTurn };
   }) ();
-
 
   const newGame = () => {
     gameBoard.resetBoard();
@@ -81,10 +80,10 @@ const gameController = (function () {
     gameBoard.recordTurn(square, turnController.getTurn());
     turnController.toggleTurn();
     if (determineWinner()) return determineWinner();
-    else if (!(gameBoard.getBoard().includes(null))) return "Tie!";
+    else if (!(gameBoard.getBoard().includes(""))) return "Tie!";
   };
 
-  return { playRound, newGame };
+  return { playRound, newGame, getTurn: turnController.getTurn };
 })();
 
 
@@ -95,15 +94,21 @@ const displayController = (function () {
 
   addGlobalEventListener('click', '.form__button--submit', (e) => {
     e.preventDefault();
-    renderGame(e);
+    updatePlayerNames(e); 
+    renderGame();
     gameController.newGame();
-  })
+    displayTurn();
+  });
 
   addGlobalEventListener('click', '.board__square', (e) => {
     let winner = gameController.playRound(e.target.dataset.square);
-    console.log(gameBoard.getBoard());
+    renderBoard();
+    displayTurn();
     if (winner) {
       renderGameOver(winner);
+      let board = body.querySelector('.board');
+      board.classList.add('disabled');
+      console.log(board);
     }
   });
 
@@ -114,7 +119,7 @@ const displayController = (function () {
   };
 
   function renderMenu () {
-    body.innerHTML = `
+    menuHTML = `
         <div class="container menu-container">
             <h1>Tic Tac Toe</h1>
             <form action="">
@@ -132,40 +137,54 @@ const displayController = (function () {
             </form>
         </div>
       `;
+
+      body.innerHTML = menuHTML;
   };
 
-  function renderGame (e) {
+  function updatePlayerNames (e) {
     let form = e.target.closest('form');
     let player1Name = form.elements.player1.value;
     let player2Name = form.elements.player2.value;
     players.player1.setName(player1Name);
     players.player2.setName(player2Name);
+  };
 
-    body.innerHTML = `
-    <div class="container game-container">
+  function renderGame () {
+    gameHTML = `
+      <div class="container game-container">
         <h1> Tic Tac Toe </h1>
         <div class="game-container__display-updates"> </div>
         <div class="game-container__display-players">
             <div data-player="1"> Player1: <p> ${players.player1.getName()} </p> </div>
             <div data-player="2"> Player2: <p> ${players.player2.getName()} </p> </div>
         </div>
-        <div class="board">
-            <div class="board__square" data-square="0"></div>
-            <div class="board__square" data-square="1"></div>
-            <div class="board__square" data-square="2"></div>
-            <div class="board__square" data-square="3"></div>
-            <div class="board__square" data-square="4"></div>
-            <div class="board__square" data-square="5"></div>
-            <div class="board__square" data-square="6"></div>
-            <div class="board__square" data-square="7"></div>
-            <div class="board__square" data-square="8"></div>
-        </div>
-    </div>`;
-  };
+      </div>
+      <div class="board"> </div>`;
+    
+    body.innerHTML = gameHTML;
+    renderBoard();
+    };
+    
+    function renderBoard () {
+      let boardElement = document.querySelector('.board');
+      let squaresHTML = "";
+      for(let i = 0; i < gameBoard.getBoard().length; i++) {
+        if (!(gameBoard.getBoard()[i])) squaresHTML += `<button class="board__square" data-square="${i}">${gameBoard.getBoard()[i]}</button>`;
+        else squaresHTML += `<button class="board__square" data-square="${i}" disabled>${gameBoard.getBoard()[i]}</button>`;
+      }
+      boardElement.innerHTML = squaresHTML;
+    }
 
   function renderGameOver(winner) {
     let updatesDisplay = body.querySelector(".game-container__display-updates");
     updatesDisplay.textContent = winner;
   }
+
+  function displayTurn() {
+    let updatesDisplay = body.querySelector(".game-container__display-updates");
+    let userName = Object.values(players).find((player) => player.getSymbol() == gameController.getTurn()).getName();
+    let displayTurnHTML = userName + "'s" + " " + "turn"
+    updatesDisplay.innerHTML = displayTurnHTML;
+  };
 
 })();
