@@ -1,7 +1,7 @@
 const gameBoard = (function (){
   board = Array(9).fill("");
   const getBoard = () => board;
-  const resetBoard = () => Array(9).fill("");
+  const resetBoard = () => board = Array(9).fill("");
   const recordTurn = (square, symbol) => board[square] = symbol;
   return { getBoard, resetBoard, recordTurn };
 })();
@@ -52,9 +52,9 @@ const gameController = (function () {
 
   const determineWinner = () => {
     let winner = findMatch(players.player1.getSymbol())
-    ? "player 1 wins"
+    ? players.player1.getName()
     : findMatch(players.player2.getSymbol())  
-      ? "player 2 wins"
+      ? players.player2.getName()
       : null;
 
     return winner;
@@ -83,7 +83,7 @@ const gameController = (function () {
     else if (!(gameBoard.getBoard().includes(""))) return "Tie!";
   };
 
-  return { playRound, newGame, getTurn: turnController.getTurn };
+  return { playRound, newGame, getTurn: turnController.getTurn, resetTurn: turnController.resetTurn };
 })();
 
 
@@ -110,6 +110,19 @@ const displayController = (function () {
       board.classList.add('disabled');
       console.log(board);
     }
+  });
+
+    addGlobalEventListener('click', '.button--reset', (e) => {
+      gameBoard.resetBoard();
+      gameController.resetTurn();
+      renderGame();
+      displayTurn();
+  });
+
+    addGlobalEventListener('click', '.button--new-game', (e) => {
+      gameBoard.resetBoard();
+      gameController.resetTurn();
+      renderMenu();
   });
 
   function addGlobalEventListener (type, selector, callback) {
@@ -177,7 +190,14 @@ const displayController = (function () {
 
   function renderGameOver(winner) {
     let updatesDisplay = body.querySelector(".game-container__display-updates");
-    updatesDisplay.textContent = winner;
+    updatesDisplay.textContent = winner + " " + "won!";
+    
+    let gameOptionsHTML = `    <div class="game-options">
+        <button class="button button--reset"> Reset </button>
+        <button class="button button--new-game"> New Game </button>
+    </div>`;
+
+    updatesDisplay.innerHTML += gameOptionsHTML;
   }
 
   function displayTurn() {
