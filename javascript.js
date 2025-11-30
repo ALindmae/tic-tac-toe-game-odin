@@ -50,14 +50,20 @@ const gameController = (function () {
     return false;
   }
 
-  const determineWinner = () => {
-    let winner = findMatch(players.player1.getSymbol())
-    ? players.player1.getName()
-    : findMatch(players.player2.getSymbol())  
-      ? players.player2.getName()
-      : null;
+  const getResult = () => {
+    if (findMatch(players.player1.getSymbol())) {
+      return `${players.player1.getName() || "Player 1"} won!`;
+    }
 
-    return winner;
+    if (findMatch(players.player2.getSymbol())) {
+      return `${players.player2.getName() || "Player 2"} won!`;
+    }
+
+    if (!gameBoard.getBoard().includes("")) {
+      return "Tie!";
+    }
+
+    return null;
   }
 
   const turnController = (function () {
@@ -79,8 +85,8 @@ const gameController = (function () {
   const playRound = (square) => {
     gameBoard.recordTurn(square, turnController.getTurn());
     turnController.toggleTurn();
-    if (determineWinner()) return determineWinner();
-    else if (!(gameBoard.getBoard().includes(""))) return "Tie!";
+
+    return getResult();
   };
 
   return { playRound, newGame, getTurn: turnController.getTurn, resetTurn: turnController.resetTurn };
@@ -88,7 +94,7 @@ const gameController = (function () {
 
 
 const displayController = (function () {
-  const body = document.querySelector('body');
+  const container = document.querySelector('.app-container');
 
   renderMenu();
 
@@ -101,14 +107,13 @@ const displayController = (function () {
   });
 
   addGlobalEventListener('click', '.board__square', (e) => {
-    let winner = gameController.playRound(e.target.dataset.square);
+    let result = gameController.playRound(e.target.dataset.square);
     renderBoard();
     displayTurn();
-    if (winner) {
-      renderGameOver(winner);
-      let board = body.querySelector('.board');
+    if (result) {
+      renderGameOver(result);
+      let board = container.querySelector('.board');
       board.classList.add('disabled');
-      console.log(board);
     }
   });
 
@@ -126,17 +131,17 @@ const displayController = (function () {
   });
 
   function addGlobalEventListener (type, selector, callback) {
-    body.addEventListener(type, (e) => {
+    container.addEventListener(type, (e) => {
       if (e.target.matches(selector)) callback(e);
     })
   };
 
   function renderMenu () {
     menuHTML = `
-        <div class="container menu-container">
-            <h1>Tic Tac Toe</h1>
+            <div class="game-header container">
+              <h1>Tic Tac Toe</h1>
+            </div>
             <form action="">
-                <div class="form__row">
                     <div class="form__input-group">
                         <label for="player1-input"> Player 1 name </label>
                         <input id="player1-input" type="text" name="player1" placeholder="Insert name">
@@ -145,13 +150,11 @@ const displayController = (function () {
                         <label for="player2-input" placeholder="Insert name"> Player 2 name </label>
                         <input id="player2-input" type="text" name="player2" placeholder="Insert name">
                     </div>
-                </div>
                 <button class="form__button--submit" type="submit"> Start Game </button>
             </form>
-        </div>
       `;
 
-      body.innerHTML = menuHTML;
+      container.innerHTML = menuHTML;
   };
 
   function updatePlayerNames (e) {
@@ -164,17 +167,20 @@ const displayController = (function () {
 
   function renderGame () {
     gameHTML = `
-      <div class="container game-container">
+      <div class="game-header container">
         <h1> Tic Tac Toe </h1>
-        <div class="game-container__display-updates"> </div>
-        <div class="game-container__display-players">
-            <div data-player="1"> Player1: <p> ${players.player1.getName()} </p> </div>
-            <div data-player="2"> Player2: <p> ${players.player2.getName()} </p> </div>
-        </div>
       </div>
-      <div class="board"> </div>`;
+        <div class="board"> </div>
+        <div class="container game-display">
+          <div class="game-display__players">
+              <div class="game-display__player-name" data-player="1"> Player1: <p> ${players.player1.getName()} </p> </div>
+              <div class="game-display__player-name" data-player="2"> Player2: <p> ${players.player2.getName()} </p> </div>
+          </div>
+          <div class="game-display__status"> </div>
+        </div>`;
+      
     
-    body.innerHTML = gameHTML;
+    container.innerHTML = gameHTML;
     renderBoard();
     };
     
@@ -188,23 +194,28 @@ const displayController = (function () {
       boardElement.innerHTML = squaresHTML;
     }
 
-  function renderGameOver(winner) {
-    let updatesDisplay = body.querySelector(".game-container__display-updates");
-    updatesDisplay.textContent = winner + " " + "won!";
+  function renderGameOver(result) {
+    let gameDisplay = container.querySelector(".game-display");
+    let status = gameDisplay.querySelector(".game-display__status");
+    status.textContent = result;
     
-    let gameOptionsHTML = `    <div class="game-options">
+    let gameOptionsHTML = `
+    <div class="game-display__options">
         <button class="button button--reset"> Reset </button>
         <button class="button button--new-game"> New Game </button>
     </div>`;
 
-    updatesDisplay.innerHTML += gameOptionsHTML;
+    gameDisplay.innerHTML += gameOptionsHTML;
   }
 
   function displayTurn() {
-    let updatesDisplay = body.querySelector(".game-container__display-updates");
-    let userName = Object.values(players).find((player) => player.getSymbol() == gameController.getTurn()).getName();
-    let displayTurnHTML = userName + "'s" + " " + "turn"
-    updatesDisplay.innerHTML = displayTurnHTML;
+    let userName;
+    for (const [key, value] of Object.entries(players)) {
+      if (value.getSymbol() == gameController.getTurn()) userName = value.getName() || key;
+    }
+    let statusDisplay = container.querySelector(".game-display__status");
+    let displayText = `${userName}'s turn`;
+    statusDisplay.innerHTML = displayText;
   };
 
 })();
