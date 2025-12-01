@@ -37,30 +37,27 @@ const gameController = (function () {
 
   const findMatch = (symbol) => {
     for (const combination of wins) {
-      let match = true;
-      for (const square of combination) {
-        if (!(gameBoard.getBoard()[square] == symbol)) {
-          match = false;
-          break;
-        } 
-      }
-      if (match) return true;
+      if (combination.every((element) => gameBoard.getBoard()[element] == symbol)) return combination;
     }
-
-    return false;
+    
+    return null;
   }
 
   const getResult = () => {
-    if (findMatch(players.player1.getSymbol())) {
-      return `${players.player1.getName() || "Player 1"} won!`;
+    let player1Win = findMatch(players.player1.getSymbol());
+    if (player1Win) {
+      let resultString = `${players.player1.getName() || "Player 1"} won!`;
+      return { result: resultString, combination: player1Win };
     }
-
-    if (findMatch(players.player2.getSymbol())) {
-      return `${players.player2.getName() || "Player 2"} won!`;
+    
+    let player2Win = findMatch(players.player2.getSymbol());
+    if (player2Win) {
+      let resultString = `${players.player2.getName() || "Player 2"} won!`;
+      return { result: resultString, combination: player2Win };
     }
 
     if (!gameBoard.getBoard().includes("")) {
-      return "Tie!";
+      return { result: "Tie!", combination: player2Win };
     }
 
     return null;
@@ -111,7 +108,7 @@ const displayController = (function () {
     renderBoard();
     displayTurn();
     if (result) {
-      renderGameOver(result);
+      renderGameOver(result.result, result.combination);
       let board = container.querySelector('.board');
       board.classList.add('disabled');
     }
@@ -170,7 +167,7 @@ const displayController = (function () {
       <div class="game-header container">
         <h1> Tic Tac Toe </h1>
       </div>
-        <div class="board"> </div>
+        <div class="board"></div>
         <div class="container game-display">
           <div class="game-display__players">
               <div class="game-display__player-name" data-player="1"> Player1: <p> ${players.player1.getName()} </p> </div>
@@ -192,9 +189,10 @@ const displayController = (function () {
         else squaresHTML += `<button class="board__square" data-square="${i}" disabled>${gameBoard.getBoard()[i]}</button>`;
       }
       boardElement.innerHTML = squaresHTML;
+      
     }
 
-  function renderGameOver(result) {
+  function renderGameOver(result, combination) {
     let gameDisplay = container.querySelector(".game-display");
     let status = gameDisplay.querySelector(".game-display__status");
     status.textContent = result;
@@ -206,6 +204,7 @@ const displayController = (function () {
     </div>`;
 
     gameDisplay.innerHTML += gameOptionsHTML;
+    renderLine(combination);
   }
 
   function displayTurn() {
@@ -217,5 +216,73 @@ const displayController = (function () {
     let displayText = `${userName}'s turn`;
     statusDisplay.innerHTML = displayText;
   };
+
+  function renderLine(combination) {
+    let board = document.querySelector('.board');
+    let height = board.scrollHeight;
+
+    let lineContainer = document.createElement('div');
+    lineContainer.classList.add("container", "line-container");
+
+    let svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    svgElement.setAttribute("height", `100%`);
+    svgElement.setAttribute("width", `100%`);
+
+    let lineElement = document.createElementNS("http://www.w3.org/2000/svg", "line");
+
+    let start = ((height / 3) / 2);
+    let mid = (height / 2);
+    let end = (height - (height / 3) / 2);
+
+    const lineMap = [
+      // --- HORIZONTAL ROWS ---
+      {
+        combination: [0, 1, 2],
+        attributes: { x1: start, x2: end, y1: start, y2: start }
+      },
+      {
+        combination: [3, 4, 5],
+        attributes: { x1: start, x2: end, y1: mid, y2: mid }
+      },
+      {
+        combination: [6, 7, 8],
+        attributes: { x1: start, x2: end, y1: end, y2: end }
+      },
+
+      // --- VERTICAL COLUMNS ---
+      {
+        combination: [0, 3, 6],
+        attributes: { x1: start, x2: start, y1: start, y2: end }
+      },
+      {
+        combination: [1, 4, 7],
+        attributes: { x1: mid, x2: mid, y1: start, y2: end }
+      },
+      {
+        combination: [2, 5, 8],
+        attributes: { x1: end, x2: end, y1: start, y2: end }
+      },
+
+      // --- DIAGONALS ---
+      {
+        combination: [0, 4, 8],
+        attributes: { x1: start, x2: end, y1: start, y2: end }
+      },
+      {
+        combination: [2, 4, 6],
+        attributes: { x1: end, x2: start, y1: start, y2: end }
+      }
+    ];
+
+    for (const obj of lineMap) {
+      if (combination.join() === obj.combination.join()) {
+        for (const [key, value] of Object.entries(obj.attributes)) {
+          lineElement.setAttribute(key, `${value}px`);
+        }
+      }
+    }
+    svgElement.appendChild(lineElement);
+    board.appendChild(svgElement);
+  }
 
 })();
