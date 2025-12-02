@@ -210,7 +210,7 @@ const displayController = (function () {
   function displayTurn() {
     let userName;
     for (const [key, value] of Object.entries(players)) {
-      if (value.getSymbol() == gameController.getTurn()) userName = value.getName() || key;
+      if (value.getSymbol() == gameController.getTurn()) userName = value.getName() || key.charAt(0).toUpperCase() + key.slice(1);
     }
     let statusDisplay = container.querySelector(".game-display__status");
     let displayText = `${userName}'s turn`;
